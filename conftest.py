@@ -1,5 +1,12 @@
-cat > conftest.py <<'EOF'
-"""Fixtures compartilhadas do pytest: ciclo de vida do WebDriver."""
+"""Fixtures compartilhadas do pytest: ciclo de vida do WebDriver.
+
+Centralizar a criação do driver aqui mantém os testes limpos e torna
+trivial trocar de navegador ou rodar em modo headless (CI).
+
+O driver é resolvido pelo Selenium Manager (embutido no Selenium 4.6+),
+que baixa automaticamente a versão de chromedriver compatível com o
+navegador instalado — dispensando gerenciar o driver na mão.
+"""
 import os
 import shutil
 
@@ -25,6 +32,10 @@ def _find_browser():
 
 @pytest.fixture
 def driver():
+    """Entrega um WebDriver pronto e garante o encerramento ao fim do teste.
+
+    HEADLESS=1 (padrão em CI) roda sem abrir janela.
+    """
     options = Options()
     if os.getenv("HEADLESS", "0") == "1":
         options.add_argument("--headless=new")
@@ -36,9 +47,9 @@ def driver():
     if browser:
         options.binary_location = browser
 
+    # Selenium Manager baixa o chromedriver certo automaticamente
     drv = webdriver.Chrome(options=options)
     drv.implicitly_wait(5)
     drv.get(BASE_URL)
     yield drv
     drv.quit()
-EOF
